@@ -235,7 +235,7 @@
         const finalP = Math.round((p.price - (p.price * p.discount / 100)) / 5) * 5;
         let act = p.status === 'drop' ? `<div class="btn-drop-info">V PRODEJI OD ${p.date}</div>` : 
                   (p.status === 'none' || p.status === 'ended') ? `<button class="btn btn-secondary w-100 py-3 rounded-pill disabled">VYPRODÁNO</button>` :
-                  `<a href="https://wa.me/qr/WZXKKUT2B5X2J1?text=Ahoj! Chci: ${p.name}" target="_blank" class="btn-whatsapp py-3"><i class="fab fa-whatsapp me-2 fs-3"></i> OBJEDNAT (WA)</a>`;
+                  `<a href="https://wa.me/qr/WZXKKUT2B5X2J1?text=Ahoj! Chci: ${p.name}" target="_blank" class="btn-whatsapp py-3"><i class="fab fa-whatsapp me-2 fs-3"></i> OBJEDNAT</a>`;
         
         document.getElementById('detailContent').innerHTML = `
             <div class="modal-body p-0"><div class="row g-0">
@@ -281,4 +281,5 @@
     loadData();
 </script>
 </body>
+
 </html>
