@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fifo-Tisk | Professional 3D</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root { --bg: #ffffff; --text: #000000; --card: #ffffff; --border: #000000; --input-bg: #f8f8f8; --accent: #25D366; --purple: #6610f2; }
+        [data-theme="dark"] { --bg: #000000; --text: #ffffff; --card: #111111; --border: #ffffff; --input-bg: #222222; }
+
+        body { background-color: var(--bg); color: var(--text); transition: 0.4s; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        
+        .navbar { border-bottom: 2px solid var(--border); background: var(--bg); padding: 15px 0; }
+        .logo-img { height: 60px; border-radius: 12px; transition: 0.4s; }
+        [data-theme="dark"] .logo-img { filter: invert(1); }
+
+        .btn-custom { border: 2px solid var(--border); background: var(--text); color: var(--bg); border-radius: 40px; font-weight: 800; padding: 10px 25px; transition: 0.3s; width: 100%; }
+        .btn-whatsapp { background-color: var(--accent); color: white !important; border-radius: 40px; font-weight: 700; padding: 12px; text-decoration: none; display: flex; align-items: center; justify-content: center; border: none; }
+        .btn-drop-info { background-color: var(--purple); color: white !important; border-radius: 40px; font-weight: 700; padding: 12px; text-align: center; display: block; text-decoration: none; }
+
+        .product-card { border: 2px solid var(--border); border-radius: 30px; background: var(--card); overflow: hidden; transition: 0.4s; cursor: pointer; height: 100%; position: relative; }
+        .img-container { height: 260px; border-bottom: 2px solid var(--border); background: #333; position: relative; }
+        .product-img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .badge-status { position: absolute; top: 15px; left: 15px; padding: 6px 15px; border-radius: 12px; font-weight: 800; text-transform: uppercase; font-size: 0.75rem; z-index: 10; border: 1px solid rgba(255,255,255,0.2); }
+        .status-none { background: #6c757d; color: white; }
+        .status-ended { background: #343a40; color: #ff4d4d; }
+        .status-waiting { background: #007bff; color: white; }
+        .status-preorder { background: #fd7e14; color: white; }
+        .status-drop { background: var(--purple); color: white; box-shadow: 0 0 15px rgba(102, 16, 242, 0.5); }
+        .discount-tag { position: absolute; top: 15px; right: 15px; background: #ff0000; color: white; padding: 5px 12px; border-radius: 12px; font-weight: 900; z-index: 5; }
+
+        .form-control, .form-select { border: 2px solid var(--border) !important; border-radius: 15px !important; background: var(--input-bg) !important; color: var(--text) !important; margin-bottom: 10px; }
+        #adminPanel, #bulkActions, #colorAdmin { border: 3px solid var(--border); border-radius: 35px; padding: 25px; margin-bottom: 30px; display: none; background: var(--card); }
+        .select-checkbox { position: absolute; bottom: 15px; right: 15px; width: 25px; height: 25px; z-index: 20; }
+
+        .modal-content { border: 2px solid var(--border); border-radius: 40px; background: var(--bg); color: var(--text); }
+        .carousel-item img { height: 450px; object-fit: contain; background: #000; }
+        .color-item { border: 2px solid var(--border); border-radius: 20px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        
+        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; flex-column; justify-content: center; align-items: center; color: white; display: none; }
+    </style>
+</head>
+<body data-theme="dark">
+
+<div id="loadingOverlay">
+    <div class="spinner-border text-light mb-2"></div>
+    <div class="fw-bold">ODESÍLÁM NA SERVER...</div>
+</div>
+
+<nav class="navbar sticky-top">
+    <div class="container">
+        <a class="navbar-brand" href="#">
+            <img src="https://i.postimg.cc/RVhdf61G/Snimek-obrazovky-2026-01-13-143403.png" alt="Logo" class="logo-img">
+        </a>
+        <div class="d-flex align-items-center gap-3">
+            <div onclick="toggleColors()" style="cursor:pointer; font-size: 1.4rem;"><i class="fas fa-palette"></i></div>
+            <button id="adminBtn" class="btn" style="color: var(--text)" onclick="showLogin()"><i class="fas fa-lock"></i></button>
+            <button id="logoutBtn" class="btn btn-outline-danger btn-sm d-none" onclick="logout()">ODHLÁSIT</button>
+            <div onclick="toggleMode()" style="cursor:pointer; font-size: 1.4rem;"><i class="fas fa-circle-half-stroke"></i></div>
+        </div>
+    </div>
+</nav>
+
+<div class="container py-5">
+    
+    <div id="colorAdmin" class="animate__animated animate__fadeIn">
+        <h3 class="fw-bold mb-3 text-uppercase">Správa Materiálů</h3>
+        <div class="row g-2 mb-4">
+            <div class="col-md-4"><input type="text" id="colName" class="form-control" placeholder="Barva"></div>
+            <div class="col-md-3"><input type="text" id="colMat" class="form-control" placeholder="Materiál"></div>
+            <div class="col-md-3"><input type="number" id="colPrice" class="form-control" placeholder="Příplatek Kč"></div>
+            <div class="col-md-2"><button class="btn btn-custom" style="background:var(--text); color:var(--bg)" onclick="addColor()">PŘIDAT</button></div>
+        </div>
+        <div id="colorListAdmin"></div>
+    </div>
+
+    <div id="bulkActions" class="animate__animated animate__fadeIn bg-warning text-dark border-0 rounded-4 p-3 mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+            <h5 class="fw-bold m-0"><i class="fas fa-tools"></i> HROMADNÉ ÚPRAVY</h5>
+            <div class="d-flex gap-2">
+                <input type="number" id="bulkDiscountVal" class="form-control form-control-sm w-auto" placeholder="%">
+                <button class="btn btn-dark btn-sm rounded-pill" onclick="applyBulkDiscount()">SLEVA</button>
+                <button class="btn btn-danger btn-sm rounded-pill" onclick="bulkDelete()">SMAZAT</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="adminPanel" class="animate__animated animate__fadeIn">
+        <h2 id="editorTitle" class="fw-bold mb-4">PŘIDAT NOVÝ PRODUKT</h2>
+        <input type="hidden" id="editId">
+        <div class="row g-3">
+            <div class="col-md-4"><label class="small fw-bold">NÁZEV PRODUKTU</label><input type="text" id="pName" class="form-control"></div>
+            <div class="col-md-2"><label class="small fw-bold">ZÁKLADNÍ CENA</label><input type="number" id="pPrice" class="form-control"></div>
+            <div class="col-md-2"><label class="small fw-bold">SLEVA %</label><input type="number" id="pDiscount" class="form-control" value="0"></div>
+            <div class="col-md-4">
+                <label class="small fw-bold">STAV</label>
+                <select id="pStatus" class="form-select" onchange="toggleDateInput()">
+                    <option value="default">Skladem</option>
+                    <option value="preorder">Předobjednávka</option>
+                    <option value="drop">Drop (s datem)</option>
+                    <option value="waiting">Očekáváme</option>
+                    <option value="none">Není skladem</option>
+                    <option value="ended">Ukončená výroba</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-none" id="dateInputDiv"><label class="small fw-bold">DATUM</label><input type="text" id="pDate" class="form-control" placeholder="např. 15. března"></div>
+            <div class="col-md-2"><label class="small fw-bold">SKLADEM (KS)</label><input type="number" id="pStock" class="form-control" value="1"></div>
+            <div class="col-12"><label class="small fw-bold">POPIS</label><textarea id="pDesc" class="form-control" rows="3"></textarea></div>
+            <div class="col-12">
+                <input type="file" id="fileInp" multiple accept="image/*" class="d-none" onchange="processImages(this.files)">
+                <button class="btn btn-outline-dark w-100 fw-bold py-3" style="border: 2px dashed var(--border)" onclick="document.getElementById('fileInp').click()">VYBRAT FOTKY</button>
+                <div id="previews" class="mt-3 d-flex flex-wrap gap-2"></div>
+            </div>
+            <div class="col-12"><button id="saveBtn" class="btn btn-custom py-3 mt-2" style="background:var(--text); color:var(--bg)" onclick="saveProduct()">PUBLIKOVAT NA WEB</button></div>
+        </div>
+    </div>
+
+    <div class="row g-4" id="grid"></div>
+</div>
+
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered"><div class="modal-content" id="detailContent"></div></div>
+</div>
+
+<div class="modal fade" id="colorModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content p-4"><h2 class="fw-bold mb-4 text-center">NABÍDKA BAREV</h2><div id="colorUser"></div></div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const DB_URL = "https://fifotisk-default-rtdb.europe-west1.firebasedatabase.app/";
+    let products = [];
+    let colors = [];
+    let tempImages = [];
+    let isAdmin = false;
+
+    async function loadData() {
+        const res = await fetch(`${DB_URL}webData.json`);
+        const data = await res.json();
+        if(data) {
+            products = data.products || [];
+            colors = data.colors || [];
+            render();
+            renderColors();
+        }
+    }
+
+    async function syncDB() {
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        await fetch(`${DB_URL}webData.json`, {
+            method: 'PUT',
+            body: JSON.stringify({ products, colors })
+        });
+        location.reload();
+    }
+
+    function showLogin() {
+        if(prompt("Heslo:") === "fifo5566") {
+            isAdmin = true;
+            document.getElementById('adminPanel').style.display = 'block';
+            document.getElementById('bulkActions').style.display = 'block';
+            document.getElementById('colorAdmin').style.display = 'block';
+            document.getElementById('adminBtn').classList.add('d-none');
+            document.getElementById('logoutBtn').classList.remove('d-none');
+            render(); renderColors();
+        }
+    }
+
+    function processImages(files) {
+        tempImages = []; document.getElementById('previews').innerHTML = '';
+        Array.from(files).forEach(file => {
+            let reader = new FileReader();
+            reader.onload = (e) => {
+                let img = new Image(); img.src = e.target.result;
+                img.onload = () => {
+                    let canvas = document.createElement('canvas');
+                    let max = 800; let w = img.width, h = img.height;
+                    if(w > h) { if(w > max) { h *= max/w; w = max; } } else { if(h > max) { w *= max/h; h = max; } }
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    let compressed = canvas.toDataURL('image/jpeg', 0.6);
+                    tempImages.push(compressed);
+                    document.getElementById('previews').innerHTML += `<img src="${compressed}" style="width:60px;height:60px;object-fit:cover;border-radius:10px">`;
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function saveProduct() {
+        const name = document.getElementById('pName').value;
+        if(!name) return alert("Zadej název!");
+        const id = document.getElementById('editId').value || Date.now();
+        const p = {
+            id: id, name: name, price: parseFloat(document.getElementById('pPrice').value) || 0,
+            discount: parseInt(document.getElementById('pDiscount').value) || 0,
+            status: document.getElementById('pStatus').value, date: document.getElementById('pDate').value,
+            stock: document.getElementById('pStock').value, desc: document.getElementById('pDesc').value,
+            images: tempImages.length ? tempImages : (document.getElementById('editId').value ? products.find(x => x.id == id).images : [])
+        };
+        const idx = products.findIndex(x => x.id == id);
+        if(idx > -1) products[idx] = p; else products.push(p);
+        syncDB();
+    }
+
+    function render() {
+        document.getElementById('grid').innerHTML = products.map(p => {
+            const finalP = Math.round((p.price - (p.price * p.discount / 100)) / 5) * 5;
+            let b = p.status === 'drop' ? `<div class="badge-status status-drop">DROP ${p.date}</div>` : 
+                    p.status === 'preorder' ? `<div class="badge-status status-preorder">Předobjednávka</div>` : 
+                    p.status === 'none' ? `<div class="badge-status status-none">Vyprodáno</div>` : '';
+            return `
+                <div class="col-md-6 col-lg-4 animate__animated animate__fadeIn">
+                    <div class="product-card" onclick="openDetail('${p.id}')">
+                        ${b} ${p.discount > 0 ? `<div class="discount-tag">-${p.discount}%</div>` : ''}
+                        <div class="img-container"><img src="${p.images[0] || ''}" class="product-img"></div>
+                        <div class="p-4 text-center">
+                            <h4 class="fw-bold mb-1 text-uppercase">${p.name}</h4>
+                            <div class="h4 fw-bold mb-0">${finalP} Kč</div>
+                            ${isAdmin ? `<div class="mt-3 d-flex gap-2"><button class="btn btn-sm btn-dark w-100" onclick="event.stopPropagation(); editP('${p.id}')">EDIT</button><input type="checkbox" class="select-checkbox" data-id="${p.id}" onclick="event.stopPropagation()"></div>` : ''}
+                        </div>
+                    </div>
+                </div>`;
+        }).join('');
+    }
+
+    function openDetail(id) {
+        const p = products.find(x => x.id == id);
+        const finalP = Math.round((p.price - (p.price * p.discount / 100)) / 5) * 5;
+        let act = p.status === 'drop' ? `<div class="btn-drop-info">V PRODEJI OD ${p.date}</div>` : 
+                  (p.status === 'none' || p.status === 'ended') ? `<button class="btn btn-secondary w-100 py-3 rounded-pill disabled">VYPRODÁNO</button>` :
+                  `<a href="https://wa.me/qr/WZXKKUT2B5X2J1?text=Ahoj! Chci: ${p.name}" target="_blank" class="btn-whatsapp py-3"><i class="fab fa-whatsapp me-2 fs-3"></i> OBJEDNAT (WA)</a>`;
+        
+        document.getElementById('detailContent').innerHTML = `
+            <div class="modal-body p-0"><div class="row g-0">
+                <div class="col-lg-7 border-end"><div class="carousel slide" data-bs-ride="carousel"><div class="carousel-inner">${p.images.map((img, i) => `<div class="carousel-item ${i===0?'active':''}"><img src="${img}" class="w-100"></div>`).join('')}</div></div></div>
+                <div class="col-lg-5 p-4 d-flex flex-column justify-content-center">
+                    <button type="button" class="btn-close ms-auto mb-2" data-bs-dismiss="modal"></button>
+                    <h1 class="fw-bold text-uppercase mb-3">${p.name}</h1>
+                    <p class="mb-4 opacity-75">${p.desc || ''}</p>
+                    <div class="h1 fw-bold mb-4">${finalP} Kč</div>
+                    ${act}
+                </div>
+            </div></div>`;
+        new bootstrap.Modal(document.getElementById('detailModal')).show();
+    }
+
+    function addColor() {
+        colors.push({id: Date.now(), name: document.getElementById('colName').value, mat: document.getElementById('colMat').value, price: document.getElementById('colPrice').value || 0});
+        syncDB();
+    }
+
+    function renderColors() {
+        const h = colors.map(c => `<div class="color-item"><span><b>${c.name}</b> (${c.mat})</span><span>+${c.price} Kč ${isAdmin?`<i class="fas fa-trash ms-3 text-danger" style="cursor:pointer" onclick="delCol(${c.id})"></i>`:''}</span></div>`).join('');
+        document.getElementById('colorListAdmin').innerHTML = h;
+        document.getElementById('colorUser').innerHTML = h || 'Žádné barvy.';
+    }
+
+    function editP(id) {
+        const p = products.find(x => x.id == id);
+        document.getElementById('editId').value = p.id; document.getElementById('pName').value = p.name;
+        document.getElementById('pPrice').value = p.price; document.getElementById('pDiscount').value = p.discount;
+        document.getElementById('pStatus').value = p.status; document.getElementById('pDate').value = p.date;
+        document.getElementById('pStock').value = p.stock; document.getElementById('pDesc').value = p.desc;
+        toggleDateInput(); window.scrollTo(0,0);
+    }
+
+    function delCol(id) { colors = colors.filter(x => x.id != id); syncDB(); }
+    function toggleDateInput() { document.getElementById('dateInputDiv').classList.toggle('d-none', document.getElementById('pStatus').value !== 'drop'); }
+    function applyBulkDiscount() { const d = parseInt(document.getElementById('bulkDiscountVal').value); document.querySelectorAll('.select-checkbox:checked').forEach(cb => { const p = products.find(x => x.id == cb.dataset.id); if(p) p.discount = d; }); syncDB(); }
+    function bulkDelete() { if(confirm("Smazat?")) { document.querySelectorAll('.select-checkbox:checked').forEach(cb => { products = products.filter(x => x.id != cb.dataset.id); }); syncDB(); } }
+    function toggleMode() { document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
+    function toggleColors() { new bootstrap.Modal(document.getElementById('colorModal')).show(); renderColors(); }
+    function logout() { location.reload(); }
+    loadData();
+</script>
+</body>
+</html>
